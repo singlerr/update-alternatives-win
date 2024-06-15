@@ -1,0 +1,9 @@
+[package]
+name = "update-alternatives"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+winreg = "0.52"
+regex = "1.10.5"
+lazy_static = "1.4.0"
