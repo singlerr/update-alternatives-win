@@ -1,6 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 use std::ffi::{OsStr, OsString};
 use std::io;
+use std::io::{Error, ErrorKind};
 use lazy_static::lazy_static;
 use winreg::RegKey;
 use winreg::types::FromRegValue;
@@ -21,30 +22,34 @@ impl <'h> RegistryHelper<'h> {
         }
     }
 
-    fn get_value_recursively<N: AsRef<OsStr>>(&self, name: N) -> Option<String>{
+    fn get_value_recursively<N: AsRef<OsStr>>(&self, name: N) -> io::Result<String>{
         let mut lookups:HashMap<OsString, String> = HashMap::new();
         let mut queue:VecDeque<OsString> = VecDeque::new();
 
         let name = OsString::from(name.as_ref());
         queue.push_back(name.clone());
         while ! queue.is_empty() {
-            let name = queue.pop_back()?;
+            let name = queue.pop_back().unwrap();
             let mut value:String = if let Some(cache) = lookups.get(&name){
                 String::from(cache)
             }else{
-                self.handle.get_value(&name).ok()?
+                match self.handle.get_value(&name) {
+                    Ok(val) => val,
+                    Err(_) => name.clone().into_string().unwrap()
+                }
             };
 
             let val = value.as_str();
             if PATTERN_INNER_VARIABLE.is_match(val){
-                for m in PATTERN_INNER_VARIABLE.find_iter(val) {
-                    let key = OsString::from(m.as_str());
+                for (i, m) in PATTERN_INNER_VARIABLE.find_iter(val).enumerate() {
+                    let match_val = &m.as_str()[1..m.len() -1];
+                    let key = OsString::from(match_val);
                     if ! lookups.contains_key(&key) {
                         queue.push_back(name.clone());
                         queue.push_back(key);
                     } else {
-                        let pattern = format!("%{}%", key.to_str()?);
-                        let cached = lookups.get(&key)?;
+                        let pattern = format!("%{}%", key.to_str().unwrap());
+                        let cached = lookups.get(&key).unwrap();
                         let new_var = value.replace(pattern.as_str(), cached);
                         lookups.insert(name.clone(), new_var);
                     }
@@ -53,14 +58,16 @@ impl <'h> RegistryHelper<'h> {
                 lookups.insert(name, value);
             }
         }
-
-        lookups.get(&name).map(|t| { String::from(t) })
+        match lookups.get(&name).map(|t| { String::from(t) }) {
+            None => Err(io::Error::from(ErrorKind::NotFound)),
+            Some(val) => Ok(val)
+        }
     }
 
-    pub fn get_value<N: AsRef<OsStr>>(&self, name: N, recursive: bool) -> Option<String>{
+    pub fn get_value<N: AsRef<OsStr>>(&self, name: N, recursive: bool) -> io::Result<String>{
         if !recursive {
-            let value:String = self.handle.get_value(name).ok()?;
-            Some(value)
+            let value:String = self.handle.get_value(name)?;
+            Ok(value)
         } else {
             self.get_value_recursively(name)
         }
