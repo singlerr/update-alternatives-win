@@ -1,3 +1,5 @@
+extern crate core;
+
 use std::io;
 use clap::Parser;
 mod registry_helper;
@@ -25,7 +27,7 @@ fn main() -> io::Result<()>{
 mod tests{
     use winreg::enums::HKEY_LOCAL_MACHINE;
     use winreg::RegKey;
-    use crate::jdk::{get_search_path_candidates, get_search_path_candidates};
+    use crate::jdk::{get_jdks, get_search_path_candidates};
     use crate::registry_helper::RegistryHelper;
 
     #[test]
@@ -40,7 +42,7 @@ mod tests{
     #[test]
     fn get_roaming_path(){
         unsafe {
-            let p = get_search_path_candidates();
+            let p = get_jdks();
             println!("{:?}", &p);
         }
     }
