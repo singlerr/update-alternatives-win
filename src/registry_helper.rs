@@ -5,6 +5,7 @@ use std::ffi::{OsStr, OsString};
 use std::io;
 use std::io::ErrorKind;
 use winreg::RegKey;
+use winreg::types::ToRegValue;
 
 lazy_static! {
     pub static ref PATTERN_INNER_VARIABLE:Regex = Regex::new("%([A-za-z-0-9]+)%").unwrap();
@@ -18,6 +19,11 @@ impl<'h> RegistryHelper<'h> {
         RegistryHelper {
             handle: reg_key
         }
+    }
+
+    pub fn set_value<N: AsRef<OsStr>, T: ToRegValue>(&self, name: N, value: T) -> io::Result<()>{
+        self.handle.set_value(name, &value)?;
+        Ok(())
     }
 
     fn get_value_recursively<N: AsRef<OsStr>>(&self, name: N) -> io::Result<String> {

@@ -32,8 +32,8 @@ impl SearchCandidate {
 
 #[derive(Debug)]
 pub struct JDK {
-    version: String,
-    path: PathBuf,
+    pub version: String,
+    pub path: PathBuf,
 }
 
 
