@@ -4,11 +4,11 @@ use std::collections::{HashMap, VecDeque};
 use std::ffi::{OsStr, OsString};
 use std::io;
 use std::io::ErrorKind;
-use winreg::RegKey;
 use winreg::types::ToRegValue;
+use winreg::RegKey;
 
 lazy_static! {
-    pub static ref PATTERN_INNER_VARIABLE:Regex = Regex::new("%([A-za-z-0-9]+)%").unwrap();
+    pub static ref PATTERN_INNER_VARIABLE: Regex = Regex::new("%([A-za-z-0-9]+)%").unwrap();
 }
 pub struct RegistryHelper<'h> {
     handle: &'h RegKey,
@@ -16,12 +16,10 @@ pub struct RegistryHelper<'h> {
 
 impl<'h> RegistryHelper<'h> {
     pub fn wrap(reg_key: &'h RegKey) -> RegistryHelper {
-        RegistryHelper {
-            handle: reg_key
-        }
+        RegistryHelper { handle: reg_key }
     }
 
-    pub fn set_value<N: AsRef<OsStr>, T: ToRegValue>(&self, name: N, value: T) -> io::Result<()>{
+    pub fn set_value<N: AsRef<OsStr>, T: ToRegValue>(&self, name: N, value: T) -> io::Result<()> {
         self.handle.set_value(name, &value)?;
         Ok(())
     }
@@ -39,7 +37,7 @@ impl<'h> RegistryHelper<'h> {
             } else {
                 match self.handle.get_value(&name) {
                     Ok(val) => val,
-                    Err(_) => name.clone().into_string().unwrap()
+                    Err(_) => name.clone().into_string().unwrap(),
                 }
             };
 
@@ -62,9 +60,9 @@ impl<'h> RegistryHelper<'h> {
                 lookups.insert(name, value);
             }
         }
-        match lookups.get(&name).map(|t| { String::from(t) }) {
+        match lookups.get(&name).map(|t| String::from(t)) {
             None => Err(io::Error::from(ErrorKind::NotFound)),
-            Some(val) => Ok(val)
+            Some(val) => Ok(val),
         }
     }
 
@@ -77,4 +75,3 @@ impl<'h> RegistryHelper<'h> {
         }
     }
 }
-
