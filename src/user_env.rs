@@ -30,7 +30,7 @@ pub fn detect_current_jdk() -> std::io::Result<String> {
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?)
 }
 
-fn set_java_home(handle: &RegistryHelper, jdk: &JDK) -> std::io::Result<()> {
+pub fn set_java_home(handle: &RegistryHelper, jdk: &JDK) -> std::io::Result<()> {
     handle.set_value(JAVA_HOME, jdk.path.as_os_str())
 }
 
@@ -47,7 +47,7 @@ pub fn get_path_vars(
 /// If it is correct, then returns Ok(None)
 /// else, its value was not found or jdk version does not match with actual working
 /// returns Ok(Some), which consists of env value to set
-fn validate_java_home(handle: &RegistryHelper) -> std::io::Result<Option<String>> {
+pub fn validate_java_home(handle: &RegistryHelper) -> std::io::Result<Option<String>> {
     let java_home = handle.get_value(JAVA_HOME, false);
 
     // There is env var assigned already
