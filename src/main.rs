@@ -5,9 +5,11 @@ use crate::registry_helper::RegistryHelper;
 use crate::user_env::{detect_current_jdk, set_java_home, validate_env_path};
 use clap::{arg, Parser};
 use std::io;
-use windows::core::h;
+use std::path::PathBuf;
 use winreg::enums::HKEY_LOCAL_MACHINE;
 use winreg::RegKey;
+
+const ENV_KEY: &str = "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
 
 mod jdk;
 mod registry_helper;
@@ -46,8 +48,7 @@ fn main() -> io::Result<()> {
 
         let jdk = &jdk_list[i];
         let key = RegKey::predef(HKEY_LOCAL_MACHINE);
-        let handle =
-            key.open_subkey("SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment")?;
+        let handle = key.open_subkey(ENV_KEY)?;
         let handle = RegistryHelper::wrap(&handle);
         set_jdk(&handle, jdk)?;
 
@@ -66,7 +67,7 @@ fn set_jdk(helper: &RegistryHelper, jdk: &JDK) -> io::Result<()> {
 }
 
 fn print_env() {
-    println!(
+    print!(
         "Current JVM: {0: <10}",
         if let Ok(jdk) = detect_current_jdk() {
             jdk
@@ -77,10 +78,35 @@ fn print_env() {
 }
 
 fn print_jdk_list(jdk_list: &Vec<JDK>) {
-    println!("\t{0: <10} | {1: <10} | {2: <10}", "index", "info", "path");
+    println!("   {0: <10} | {1: <10} | {2: <10}", "index", "info", "path");
+
+    let current_jdk: Option<usize> = if let Ok(jdk) = detect_current_jdk() {
+        let mut p = PathBuf::from(jdk);
+        p.pop(); // leaf dir = bin
+        p.pop(); // leaf dir = jdk
+
+        jdk_list
+            .iter()
+            .enumerate()
+            .find(|(i, jdk)| jdk.path == p)
+            .map(|(i, _)| i)
+    } else {
+        None
+    };
+
     for (index, jdk) in jdk_list.iter().enumerate() {
         println!(
-            "\t{0: <10}  {1: <10}  {2: <10}",
+            "{0}{1: <10}  {2: <10}  {3: <10}",
+            match current_jdk {
+                Some(i) => {
+                    if i == index {
+                        "-> "
+                    } else {
+                        "   "
+                    }
+                }
+                None => "   ",
+            },
             index,
             jdk.version,
             jdk.path.to_str().unwrap()
@@ -90,12 +116,11 @@ fn print_jdk_list(jdk_list: &Vec<JDK>) {
 #[cfg(test)]
 mod tests {
     use crate::jdk::get_jdks;
-    use crate::print_jdk_list;
     use crate::registry_helper::RegistryHelper;
     use crate::user_env::{
         detect_current_jdk, get_path_vars, validate_env_path, validate_java_home,
     };
-    use windows::core::h;
+    use crate::{print_jdk_list, ENV_KEY};
     use winreg::enums::HKEY_LOCAL_MACHINE;
     use winreg::RegKey;
 
@@ -115,9 +140,7 @@ mod tests {
     #[test]
     fn get_java_home() {
         let key = RegKey::predef(HKEY_LOCAL_MACHINE);
-        let handle = key
-            .open_subkey("SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment")
-            .expect("Failed to get handle!");
+        let handle = key.open_subkey(ENV_KEY).expect("Failed to get handle!");
         let helper = RegistryHelper::wrap(&handle);
         let value = helper
             .get_value("JAVA_HOME", true)
@@ -127,9 +150,7 @@ mod tests {
     #[test]
     fn get_env_path() {
         let key = RegKey::predef(HKEY_LOCAL_MACHINE);
-        let handle = key
-            .open_subkey("SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment")
-            .expect("Failed to get handle!");
+        let handle = key.open_subkey(ENV_KEY).expect("Failed to get handle!");
         let helper = RegistryHelper::wrap(&handle);
         let value = helper
             .get_value("Path", true)
@@ -140,9 +161,7 @@ mod tests {
     #[test]
     fn get_env_path_list() {
         let key = RegKey::predef(HKEY_LOCAL_MACHINE);
-        let handle = key
-            .open_subkey("SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment")
-            .expect("Failed to get handle!");
+        let handle = key.open_subkey(ENV_KEY).expect("Failed to get handle!");
         let helper = RegistryHelper::wrap(&handle);
         println!("{:?}", get_path_vars(&helper, true).expect("Error!"));
     }
@@ -150,9 +169,7 @@ mod tests {
     #[test]
     fn validate_env() {
         let key = RegKey::predef(HKEY_LOCAL_MACHINE);
-        let handle = key
-            .open_subkey("SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment")
-            .expect("Failed to get handle!");
+        let handle = key.open_subkey(ENV_KEY).expect("Failed to get handle!");
         let helper = RegistryHelper::wrap(&handle);
         validate_env_path(&helper).expect("Error!");
     }
@@ -160,9 +177,7 @@ mod tests {
     #[test]
     fn validate_java_home_test() {
         let key = RegKey::predef(HKEY_LOCAL_MACHINE);
-        let handle = key
-            .open_subkey("SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment")
-            .expect("Failed to get handle!");
+        let handle = key.open_subkey(ENV_KEY).expect("Failed to get handle!");
         let helper = RegistryHelper::wrap(&handle);
         println!("{:?}", validate_java_home(&helper).expect("Error!"));
     }
