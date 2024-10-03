@@ -45,15 +45,17 @@ fn main() -> io::Result<()> {
                 jdk_list.len() - 1
             );
         }
-
         let jdk = &jdk_list[i];
         let key = RegKey::predef(HKEY_LOCAL_MACHINE);
-        let handle = key.open_subkey(ENV_KEY)?;
+        let (handle, _) = key.create_subkey(ENV_KEY)?;
         let handle = RegistryHelper::wrap(&handle);
+
         set_jdk(&handle, jdk)?;
 
         if let Some(path) = validate_env_path(&handle)? {
-            handle.set_value("Path", path)?;
+            // handle.set_value("Path", path)?;
+            println!("{}", path);
+            return Ok(())
         } else {
             panic!("Failed to set PATH")
         }

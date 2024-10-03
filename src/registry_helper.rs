@@ -4,6 +4,9 @@ use std::collections::{HashMap, VecDeque};
 use std::ffi::{OsStr, OsString};
 use std::io;
 use std::io::ErrorKind;
+use windows::core::{h, s, w, Param};
+use windows::Win32::Foundation::{LPARAM, WPARAM};
+use windows::Win32::UI::WindowsAndMessaging::{SendMessageA, SendMessageTimeoutA, HWND_BROADCAST, WM_SETTINGCHANGE};
 use winreg::types::ToRegValue;
 use winreg::RegKey;
 
@@ -69,7 +72,7 @@ impl<'h> RegistryHelper<'h> {
     pub fn get_value<N: AsRef<OsStr>>(&self, name: N, recursive: bool) -> io::Result<String> {
         if !recursive {
             let value: String = self.handle.get_value(name)?;
-            Ok(value)
+            Ok(String::from(&value[1..(value.len()-1)]))
         } else {
             self.get_value_recursively(name)
         }
