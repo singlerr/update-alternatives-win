@@ -87,16 +87,17 @@ pub fn validate_env_path(handle: &RegistryHelper) -> std::io::Result<Option<Stri
             result.push_str(var.clone().as_str());
             result.push_str(";");
             for (i, p) in path_vars.iter().enumerate() {
-                if i == index {
+                if index == i {
                     continue;
                 }
                 &result.push_str(p.as_str());
+                &result.push_str(";");
             }
-            // If there is index pointing _JAVA_HOME_, just take its priority to the highest
-            let new_path_var = format!("{0};{1}", &var, &result);
-            // and it may not be safe to put env variable, return new value so that caller can handle it
-            // handle.set_value("Path", new_path_var)?;
-            return Ok(Some(new_path_var));
+            result.remove(result.len() - 1); // remove last ;
+                                             // If there is index pointing _JAVA_HOME_, just take its priority to the highest
+                                             // and it may not be safe to put env variable, return new value so that caller can handle it
+                                             // handle.set_value("Path", new_path_var)?;
+            return Ok(Some(result));
         }
     }
 

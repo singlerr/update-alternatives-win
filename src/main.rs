@@ -53,9 +53,8 @@ fn main() -> io::Result<()> {
         set_jdk(&handle, jdk)?;
 
         if let Some(path) = validate_env_path(&handle)? {
-            // handle.set_value("Path", path)?;
-            println!("{}", path);
-            return Ok(())
+            handle.set_value("Path", path)?;
+            return Ok(());
         } else {
             panic!("Failed to set PATH")
         }
